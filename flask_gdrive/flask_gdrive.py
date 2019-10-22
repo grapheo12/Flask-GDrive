@@ -1,32 +1,31 @@
 from __future__ import print_function
 import pickle
 import os.path
+import threading
+import time
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
 from flask import current_app, _app_ctx_stack, Response, url_for
 
-class GDriveStatic:
-    def __init__(self, app, remote_folder, creds, token='token.pickle'):
+class GDriveMain:
+    def __init__(self, app, creds, token, *args):
         self.app = app
         self.folder_id = ""
         if app is not None:
-            self.init_app(app, remote_folder, creds, token)
+            app.config.setdefault('GDRIVE_CREDENTIALS_URI', creds)
+            app.config.setdefault('GDRIVE_TOKEN_URI', token)
+            self.init_app(app, *args)
     
-    def init_app(self, app, remote_folder, creds, token):
-        app.config.setdefault('GDRIVE_STATIC_FOLDER', remote_folder)
-        app.config.setdefault('GDRIVE_CREDENTIALS_URI', creds)
-        app.config.setdefault('GDRIVE_TOKEN_URI', token)
-        app.teardown_appcontext(self.teardown)
-
-    def teardown(self, exception):
-        ctx = _app_ctx_stack.top
-        if hasattr(ctx, 'gdrive_service'):
-            ctx.gdrive_service = None
+    def init_app(self, app, *args):
+        pass
+        #To be implemented separately.
 
     def connect(self):
-        SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+        SCOPES = ['https://www.googleapis.com/auth/drive.readonly',
+        'https://www.googleapis.com/auth/spreadsheets'
+        ]
         creds = None
         if os.path.exists(current_app.config['GDRIVE_TOKEN_URI']):
             with open(current_app.config['GDRIVE_TOKEN_URI'], 'rb') as token:
@@ -43,23 +42,37 @@ class GDriveStatic:
             with open(current_app.config['GDRIVE_TOKEN_URI'], 'wb') as token:
                 pickle.dump(creds, token)
 
-        service = build('drive', 'v3', credentials=creds)     
-        result = service.files().list(
-            pageSize=1, fields='nextPageToken, files(id, mimeType)', q="name='{}'".format(current_app.config['GDRIVE_STATIC_FOLDER'])).execute()
-        items = result.get('files', [])
+        return creds
 
-        if not items:
-            raise IOError("Folder not found in Google Drive")
-        else:
-            self.folder_id = items[0]['id']
-        return service
 
+class GDriveStatic(GDriveMain):
+    def teardown(self, exception):
+        ctx = _app_ctx_stack.top
+        if hasattr(ctx, 'gdrive_service'):
+            ctx.gdrive_service = None
+    
+    def init_app(self, app, *args):
+        remote_folder = args[0]
+        app.config.setdefault('GDRIVE_STATIC_FOLDER', remote_folder)
+        app.teardown_appcontext(self.teardown)
+    
     @property
     def gdrive_service(self):
         ctx = _app_ctx_stack.top
         if ctx is not None:
             if not hasattr(ctx, 'gdrive_service'):
-                ctx.gdrive_service = self.connect()
+                creds = self.connect()
+                service = build('drive', 'v3', credentials=creds)     
+                result = service.files().list(
+                    pageSize=1, fields='nextPageToken, files(id, mimeType)', q="name='{}'".format(current_app.config['GDRIVE_STATIC_FOLDER'])).execute()
+                items = result.get('files', [])
+
+                if not items:
+                    raise IOError("Folder not found in Google Drive")
+                else:
+                    self.folder_id = items[0]['id']
+                ctx.gdrive_service = service
+
                 print(self.folder_id)
             return ctx.gdrive_service
 
@@ -98,3 +111,61 @@ class GDriveStatic:
 
     def g_url_for(self, fpath):
         return url_for('fileHandler', fpath=fpath)
+
+
+class GDriveDB(GDriveMain):
+    def teardown(self, exception):
+        ctx = _app_ctx_stack.top
+        if hasattr(ctx, 'gdrive_db'):
+            ctx.gdrive_service = None
+    
+    def init_app(self, app, *args):
+        self.remote_sheets = args[0]
+        self.RANGE = 'A1:E'
+        if len(args) > 1:
+            cache_update = args[1]
+        else:
+            cache_update = 0
+
+        # app.config.setdefault('GDRIVE_DB_ID', remote_sheet)
+        self.cache_update_time = cache_update
+        app.teardown_appcontext(self.teardown)
+    
+    @property
+    def gdrive_db(self):
+        ctx = _app_ctx_stack.top
+        if ctx is not None:
+            if not hasattr(ctx, 'gdrive_db'):
+                creds = self.connect()
+                service = build('sheets', 'v4', credentials=creds)
+                sheet = service.spreadsheets()
+                
+                
+                self.global_values = dict()
+                for s in self.remote_sheets:
+                    result = sheet.values().get(spreadsheetId=self.remote_sheets[s], range=self.RANGE).execute()
+                    values = result.get('values', [])
+
+                    if not values:
+                        raise IOError("Sheet not found")
+                    else:
+                        self.global_values[s] = values
+                    
+                    
+                ctx.gdrive_db = self.global_values
+                self.sheet = sheet 
+                # self.update_thread = threading.Thread(target=lambda: self.update_cache())
+                # self.update_thread.start()
+            return ctx.gdrive_db
+
+    def update(self, sheet_name):
+        result = self.sheet.values().update(
+                spreadsheetId=self.remote_sheets[sheet_name], range=self.RANGE,
+                body={'values': self.global_values[sheet_name]}, valueInputOption="RAW").execute()
+
+
+
+    # def update_cache(self):
+    #     time.sleep(self.cache_update_time)
+    #     print("Updating cache")
+    #     #TODO
