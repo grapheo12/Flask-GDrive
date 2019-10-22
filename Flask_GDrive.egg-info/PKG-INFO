@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: Flask-GDrive
-Version: 0.1
+Version: 0.6
 Summary: Flask extension for Google Drive API
 Home-page: https://github.com/grapheo12/Flask-GDrive
 Author: Shubham Mishra

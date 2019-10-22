@@ -17,7 +17,7 @@ def home():
     print(gs.g_url_for("1a5.jpg"))
     print(db.gdrive_db)
     db.gdrive_db["user"][0][0] = 'bird'
-    new_row = ["cow", 200, 100, "mooo"]
+    new_row = ["hati", 200, 100, " jvncvk hkty]-pl87hg"]
     db.gdrive_db["user"].append(new_row)
     db.update("user")
     return html, 200
