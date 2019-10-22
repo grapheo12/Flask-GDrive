@@ -8,11 +8,11 @@ static files directly from a folder in Google Drive.
 View docs and examples at our [Github
 repo](https://github.com/grapheo12/Flask-Gdrive)
 """
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='Flask-GDrive',
-    version='0.1',
+    version='0.6',
     url='https://github.com/grapheo12/Flask-GDrive',
     license='MIT',
     author='Shubham Mishra',
@@ -20,7 +20,7 @@ setup(
     description='Flask extension for Google Drive API',
     long_description=__doc__,
     long_description_content_type="text/markdown",
-    py_modules=['flask_gdrive.py'],
+    packages=find_packages(),
     zip_safe=False,
     include_package_data=True,
     platforms='any',

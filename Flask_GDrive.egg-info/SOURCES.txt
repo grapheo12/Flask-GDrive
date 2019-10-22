@@ -1,8 +1,0 @@
-README.md
-setup.py
-Flask_GDrive.egg-info/PKG-INFO
-Flask_GDrive.egg-info/SOURCES.txt
-Flask_GDrive.egg-info/dependency_links.txt
-Flask_GDrive.egg-info/not-zip-safe
-Flask_GDrive.egg-info/requires.txt
-Flask_GDrive.egg-info/top_level.txt
