@@ -121,7 +121,7 @@ class GDriveDB(GDriveMain):
     
     def init_app(self, app, *args):
         self.remote_sheets = args[0]
-        self.RANGE = 'A1:E'
+        self.RANGE = 'A1:Z'
         if len(args) > 1:
             cache_update = args[1]
         else:
