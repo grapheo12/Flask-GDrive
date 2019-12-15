@@ -14,4 +14,4 @@ For now, it has 2 main components:
 
 ## Setup
 
-You need to have the Google Developer Credentials for your project to use this. Save the credentials in a safe location and initiate your app following the template given in [example.py](https://github.com/grapheo12/Flask-GDrive/flask_gdrive/example.py).
+You need to have the Google Developer Credentials for your project to use this. Save the credentials in a safe location and initiate your app following the template given in [example.py](https://github.com/grapheo12/Flask-GDrive/blob/master/flask_gdrive/example.py).
