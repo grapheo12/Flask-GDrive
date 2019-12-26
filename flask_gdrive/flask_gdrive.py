@@ -10,6 +10,10 @@ from google.auth.transport.requests import Request
 from flask import current_app, _app_ctx_stack, Response, url_for
 
 class GDriveMain:
+
+    """Base class for using Google Drive api"""
+
+    #constructor
     def __init__(self, app, creds, token, *args):
         self.app = app
         self.folder_id = ""
@@ -22,14 +26,24 @@ class GDriveMain:
         pass
         #To be implemented separately.
 
+
+    #connect function establish the cred
     def connect(self):
-        SCOPES = ['https://www.googleapis.com/auth/drive.readonly',
-        'https://www.googleapis.com/auth/spreadsheets'
+
+        SCOPES = [                                                  #List of Requesting server of Google
+            'https://www.googleapis.com/auth/drive.readonly',
+            'https://www.googleapis.com/auth/spreadsheets'
         ]
         creds = None
+        """ 
+        GDRIVE_TOKEN_URI stores token.pickle file and it is use to stores the user's access and refresh tokens, 
+        and is created automatically when the authorization flow completes for the first
+        time.
+        """
         if os.path.exists(current_app.config['GDRIVE_TOKEN_URI']):
             with open(current_app.config['GDRIVE_TOKEN_URI'], 'rb') as token:
                 creds = pickle.load(token)
+
         # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
@@ -38,6 +52,7 @@ class GDriveMain:
                 flow = InstalledAppFlow.from_client_secrets_file(
                     current_app.config['GDRIVE_CREDENTIALS_URI'], SCOPES)
                 creds = flow.run_local_server(port=0)
+
             # Save the credentials for the next run
             with open(current_app.config['GDRIVE_TOKEN_URI'], 'wb') as token:
                 pickle.dump(creds, token)
@@ -46,6 +61,12 @@ class GDriveMain:
 
 
 class GDriveStatic(GDriveMain):
+
+    """
+    GDrive Static is Content handler
+    It will fetch all the dynamic content from GDrive
+    """
+
     def teardown(self, exception):
         ctx = _app_ctx_stack.top
         if hasattr(ctx, 'gdrive_service'):
@@ -114,6 +135,12 @@ class GDriveStatic(GDriveMain):
 
 
 class GDriveDB(GDriveMain):
+
+    """
+    Database handler class
+    send and fetch data from Google docs store in our file
+    """
+
     def teardown(self, exception):
         ctx = _app_ctx_stack.top
         if hasattr(ctx, 'gdrive_db'):
