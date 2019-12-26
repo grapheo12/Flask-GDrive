@@ -4,13 +4,13 @@ import markdown
 
 app = Flask(__name__)
 
-#Intializing object for GDriveStatic
+#Intializing object of GDriveStatic for file handlling
 gs = GDriveStatic(app, 'credentials.json', 'token.pickle', 'flask_gdrive')
 db_arr = {
     "user": "1m6ypUXZa4KFR3XLtHWnyz-I6h3TZY5WdrDBgYcLOAc8"
 }
 
-#Intializing object for GDriveStatic
+#Intializing object of GDriveStatic for database
 db = GDriveDB(app, 'credentials.json', 'token.pickle', db_arr)
 app.route("/gstatic/<fpath>")(gs.fileHandler)
 
